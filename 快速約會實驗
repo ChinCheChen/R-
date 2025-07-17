@@ -1,0 +1,67 @@
+setwd("放路徑或另外讀檔案")
+spdate <- read.csv("Speed Dating Data.csv")
+spdate <- spdate[, c(1,6,15,18:30,34,46,50:67)]
+
+library(ggplot2)
+library(dplyr)
+
+na_18_23 <- colSums(is.na(spdate[, c("pf_o_att", "pf_o_sin", "pf_o_int", "pf_o_fun", "pf_o_amb", "pf_o_sha")]))
+na_24_30 <- colSums(is.na(spdate[, c("dec_o", "attr_o", "sinc_o", "intel_o", "fun_o", "amb_o", "shar_o")]))
+
+spdate[, c("attr_o", "sinc_o", "intel_o", "fun_o", "amb_o", "shar_o")] <- lapply(
+  spdate[, c("attr_o", "sinc_o", "intel_o", "fun_o", "amb_o", "shar_o")],
+  function(x) ifelse(is.na(x), 0, x)
+)
+
+mean_18_23 <- sapply(spdate[, c("pf_o_att", "pf_o_sin", "pf_o_int", "pf_o_fun", "pf_o_amb", "pf_o_sha")], mean, na.rm = TRUE)
+
+mean_df <- data.frame(
+  Attribute = c("Attractive", "Sincere", "Intelligent", "Fun", "Ambitious", "Shared Interests"),
+  Mean = mean_18_23
+) %>% arrange(desc(Mean))
+
+ggplot(mean_df, aes(x = Attribute, y = Mean, fill = Attribute)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Ratings", x = "Attributes", y = "Mean") +
+  theme_minimal() +
+  scale_fill_manual(values = c("darkslategray4", "darkolivegreen3", "lightsteelblue1", "rosybrown1", "plum2", "lightsalmon")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+spdate$career_c <- as.factor(spdate$career_c)
+
+logit_six <- glm(dec_o ~ attr_o + sinc_o + intel_o + fun_o + amb_o + shar_o, data = spdate, family = binomial(link = "logit"))
+logit_hobby <- glm(dec_o ~ sports + tvsports + exercise + dining + museums + art +
+                     hiking + gaming + clubbing + reading + tv + theater +
+                     movies + concerts + music + shopping + yoga,
+                   data = spdate, family = binomial(link = "logit"))
+logit_career <- glm(dec_o ~ career_c, data = spdate, family = binomial(link = "logit"))
+logit_samerace <- glm(dec_o ~ samerace, data = spdate, family = binomial(link = "logit"))
+
+summary(logit_six)
+summary(logit_hobby)
+summary(logit_career)
+summary(logit_samerace)
+
+na_age <- sum(is.na(spdate$age))
+mean_age <- mean(spdate$age, na.rm = TRUE)
+
+ggplot(na.omit(spdate), aes(x = age)) +
+  geom_density(fill = "darkslategray2") +
+  geom_vline(xintercept = mean_age, linetype = "dashed", color = "darkslategray", linewidth = 1) +
+  theme_minimal() +
+  labs(x = "Age", y = "Density")
+
+summary(spdate$age)
+
+goal_freq <- table(spdate$goal)
+percentage_amb <- round(prop.table(goal_freq) * 100, digits = 1)
+pie_text <- paste0(c("Seems like a Fun Night", "Meet New People", "Get a Date", "Looking for Serious Relationship", "Just to Say I Did It", "Other"), " (", percentage_amb, "%)")
+
+pie(goal_freq, labels = pie_text,
+    col = c("darkslategray4", "darkolivegreen3", "lightsteelblue1", "rosybrown1", "plum2", "lightsalmon"))
+
+ggplot(spdate, aes(x = factor(samerace))) +
+  geom_bar(fill = c("gray", "skyblue")) +
+  scale_x_discrete(labels = c("No", "Yes")) +
+  theme_minimal() +
+  labs(x = "Same Race", y = "Count", title = "Same Race or not")
