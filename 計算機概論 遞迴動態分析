@@ -1,0 +1,30 @@
+#include <iostream>
+#include <stdio.h>
+using namespace std;
+
+
+
+double factor(int n,double r, double P){
+	if (n == 0) return P;
+	double x = factor(n - 1, r, P);
+	return r * x *(1 - x);
+}
+
+int main() {
+	double r, P;
+	int M;
+	cout << "Enter r :";
+	cin >> r;
+	cout << "Enter P :";
+	cin >> P;
+	cout << "Enter M :";
+	cin >> M;
+	if (r > 3 || r < 2 || P < 0 || P>1 || M < 15) {
+		cout << "Can't Compute" << endl;
+	}
+	else {
+		for (int i = 1; i <= M; i++) {
+			cout << "X" << i << "=" << factor(i, r, P) << endl;
+		}
+	}
+}
